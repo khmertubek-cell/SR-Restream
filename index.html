@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HLS Relay Center</title>
+<style>
+:root{color-scheme:dark;--bg:#061b31;--panel:#082744;--panel2:#041a30;--line:#0879b5;--blue:#0789f9;--green:#00c98b;--red:#f43f5e;--muted:#9fc5e5}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% 0,#104c80 0,#061d36 42%,#031326 100%);color:#f2f8ff;font:14px Arial,sans-serif;min-height:100vh}
+header{text-align:center;padding:28px 18px 12px}header .logo{font-size:30px;font-weight:900;color:#41b5ff;letter-spacing:2px}h1{font-size:28px;margin:12px 0 5px}header p{color:#c1d9ef;margin:0}
+main{max-width:1800px;margin:auto;padding:10px 26px 40px}.toolbar{display:flex;justify-content:flex-end;gap:10px;margin:4px 0 12px}
+button{border:1px solid #2374a8;border-radius:8px;padding:10px 14px;background:#123e64;color:#fff;font-weight:700;cursor:pointer}button:hover{filter:brightness(1.2)}button.primary{background:#087cf0;border-color:#168eff}button.green{background:#08bd83;border-color:#16dfa0;color:#001d19}button.red{background:#e93655;border-color:#ff6680}button.purple{background:#7136d9;border-color:#9c6aff}button.small{padding:7px 10px;font-size:12px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}.stat,.panel{background:linear-gradient(120deg,#082947,#041c34);border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px #00101f66}
+.stat{padding:16px;display:flex;align-items:center;gap:14px}.stat .ico{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;background:#087df0;font-size:21px}.stat:nth-child(2) .ico{background:#00b981}.stat:nth-child(3) .ico{background:#ed3455}.stat small{display:block;color:#acd0ed;margin-bottom:6px}.stat strong{font-size:22px}
+.panel{padding:18px;margin-bottom:14px}.panel h2{font-size:20px;margin:0 0 15px}.formgrid{display:grid;grid-template-columns:1fr 1.3fr .75fr;gap:12px}.field label{display:block;font-size:12px;color:#b6d2eb;margin:0 0 7px}.field input{width:100%;background:#031a30;border:1px solid #12527e;border-radius:7px;color:#fff;padding:10px}.field input:focus{outline:1px solid #16a4ff}.formactions{display:flex;gap:8px;margin-top:12px}.hint{font-size:11px;color:#9ec8e9;margin-top:8px}
+.listhead{display:flex;justify-content:space-between;align-items:center;gap:12px}.search{width:250px;max-width:45%;background:#031a30;border:1px solid #12527e;color:white;border-radius:7px;padding:12px}
+.bulk{margin:12px 0 10px;background:#031a30;border:1px solid #12527e;border-radius:8px;padding:9px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px}
+.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:900px;background:#041d35;border-radius:8px;overflow:hidden}th{text-align:left;background:#031a30;color:#bddcf4;padding:16px;border-bottom:1px solid #174b70}td{padding:13px 12px;border-bottom:1px solid #164466}tr:last-child td{border:0}.channelname{font-weight:bold;font-size:16px}.logoBox{width:58px;height:48px;border:1px solid #17517a;border-radius:7px;display:grid;place-items:center;color:#3bb5ff;overflow:hidden}.logoBox img{width:100%;height:100%;object-fit:contain}.status{display:inline-block;padding:8px 11px;border-radius:7px;background:#063d35;color:#35f3b0;font-weight:bold}.status.off{background:#4b1727;color:#ff8da1}.viewer{background:#481c28;color:#ff6b7d;border:1px solid #e23d54;padding:7px 10px;border-radius:7px}.actions{display:flex;gap:6px;flex-wrap:wrap}.url{font-size:12px;color:#aad5f7;word-break:break-all;max-width:260px}.muted{color:#94bad9;font-size:12px}.empty{text-align:center;padding:28px;color:#9fc5e5}
+@media(max-width:900px){.stats{grid-template-columns:repeat(2,1fr)}.formgrid{grid-template-columns:1fr 1fr}.formgrid .field:last-child{grid-column:span 2}}
+@media(max-width:560px){main{padding:8px 12px 30px}.stats{grid-template-columns:1fr 1fr}.stat{padding:11px}.stat .ico{width:34px;height:34px}.formgrid{grid-template-columns:1fr}.formgrid .field:last-child{grid-column:auto}.listhead{align-items:flex-start;flex-direction:column}.search{max-width:none;width:100%}h1{font-size:22px}}
+</style>
+</head>
+<body>
+<header><div class="logo">PDTv HD</div><h1>HLS Relay Center <span style="font-size:12px;background:#079cf5;padding:5px 8px;border-radius:14px">v1.0</span></h1><p>Stream Control · HLS Output · Optional RTMP Relay</p></header>
+<main>
+<div class="toolbar"><button class="green" onclick="bulk('start-all')">▶ Play All Channels</button><button class="red" onclick="bulk('stop-all')">■ Stop All Channels</button></div>
+<section class="stats">
+ <div class="stat"><div class="ico">▣</div><div><small>Total Channels</small><strong id="total">0</strong></div></div>
+ <div class="stat"><div class="ico">▶</div><div><small>Live Channels</small><strong id="live">0</strong></div></div>
+ <div class="stat"><div class="ico">◉</div><div><small>Offline Channels</small><strong id="offline">0</strong></div></div>
+ <div class="stat"><div class="ico">▤</div><div><small>HLS Output</small><strong style="font-size:17px">/hls/{id}/index.m3u8</strong></div></div>
+</section>
+<section class="panel" id="editor">
+ <h2 id="formTitle">✎ Add Channel</h2>
+ <form id="channelForm">
+  <div class="formgrid">
+   <div class="field"><label>Channel name</label><input id="name" required maxlength="100" placeholder="Example TV"></div>
+   <div class="field"><label>Input stream URL (m3u8 / HTTP / RTMP)</label><input id="inputUrl" required placeholder="https://example.com/live/stream.m3u8"></div>
+   <div class="field"><label>Channel ID (letters, numbers, _ or -)</label><input id="channelId" required pattern="[A-Za-z0-9_-]{2,64}" placeholder="exampletv"></div>
+   <div class="field"><label>RTMP destination (optional)</label><input id="rtmp" placeholder="rtmp://server/app/stream"></div>
+   <div class="field"><label>Channel logo URL (optional)</label><input id="logo" placeholder="https://example.com/logo.png"></div>
+  </div>
+  <div class="formactions"><button class="primary" type="submit">Save channel</button><button type="button" onclick="resetForm()">Cancel</button></div>
+  <div class="hint">Stream copy is used (no transcoding). HLS output is generated in 4-second segments. Editing a running channel stops its relay; start it again to apply changes.</div>
+ </form>
+</section>
+<section class="panel">
+ <div class="listhead"><h2>▣ Channel List</h2><input class="search" id="search" placeholder="⌕ Search channel..." oninput="render()"></div>
+ <div class="bulk"><label><input type="checkbox" id="selectAll" onchange="toggleAll(this.checked)"> Select all</label><span id="selectedCount">0 selected</span><button class="purple small" onclick="deleteSelected()">▣ Delete selected</button><span class="muted">Channel order follows the saved list.</span></div>
+ <div class="tablewrap"><table><thead><tr><th>Select</th><th>#</th><th>Logo</th><th>Channel</th><th>ID</th><th>Status</th><th>Viewers (est.)</th><th>HLS Link</th><th>Actions</th></tr></thead><tbody id="rows"><tr><td colspan="9" class="empty">Loading channels…</td></tr></tbody></table></div>
+</section>
+</main>
+<script>
+let channels=[], editing=null, selected=new Set();
+const $=id=>document.getElementById(id);
+function credentials(){return "Basic "+btoa(prompt("Admin username:") + ":" + prompt("Admin password:"))}
+let authHeader=sessionStorage.getItem("relayAuth");
+async function api(path,opts={}) {
+ if(!authHeader){authHeader=credentials();sessionStorage.setItem("relayAuth",authHeader)}
+ const res=await fetch("/api"+path,{...opts,headers:{"Content-Type":"application/json","Authorization":authHeader,...(opts.headers||{})}});
+ if(res.status===401){sessionStorage.removeItem("relayAuth");authHeader=null;throw new Error("Login failed. Refresh and try again.")}
+ const data=await res.json().catch(()=>({}));
+ if(!res.ok)throw new Error(data.error||"Request failed");
+ return data;
+}
+async function load(){try{channels=await api("/channels");render()}catch(e){$("rows").innerHTML=`<tr><td colspan="9" class="empty">${esc(e.message)}</td></tr>`}}
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function render(){
+ const q=$("search").value.toLowerCase();
+ const shown=channels.filter(c=>(c.name+" "+c.id).toLowerCase().includes(q));
+ $("total").textContent=channels.length;$("live").textContent=channels.filter(c=>c.running).length;$("offline").textContent=channels.filter(c=>!c.running).length;
+ $("selectedCount").textContent=selected.size+" selected";
+ $("rows").innerHTML=shown.length?shown.map((c,i)=>`<tr>
+ <td><input type="checkbox" ${selected.has(c.id)?"checked":""} onchange="selectOne('${esc(c.id)}',this.checked)"></td>
+ <td>${i+1}</td><td><div class="logoBox">${c.logo?`<img src="${esc(c.logo)}" onerror="this.remove()">`:"▣"}</div></td>
+ <td class="channelname">${esc(c.name)}</td><td>${esc(c.id)}</td>
+ <td><span class="status ${c.running?"":"off"}">${c.running?"● Live":"● Offline"}</span></td>
+ <td><span class="viewer">◉ —</span></td>
+ <td><div class="url">${esc(c.hlsUrl)}</div><div class="actions" style="margin-top:7px"><button class="small" onclick="openHls('${esc(c.hlsUrl)}')">↗ Open HLS</button><button class="small" onclick="copyUrl('${esc(c.hlsUrl)}')">▣ Copy M3U8</button></div></td>
+ <td><div class="actions"><button class="small ${c.running?"red":"green"}" onclick="control('${esc(c.id)}','${c.running?"stop":"start"}')">${c.running?"■ Stop":"▶ Start"}</button><button class="small primary" onclick="editChannel('${esc(c.id)}')">✎ Edit</button><button class="small" onclick="removeChannel('${esc(c.id)}')">Delete</button></div></td>
+ </tr>`).join(""):`<tr><td colspan="9" class="empty">No channels yet. Add your first stream above.</td></tr>`;
+}
+function resetForm(){editing=null;$("channelForm").reset();$("channelId").disabled=false;$("formTitle").textContent="✎ Add Channel"}
+async function editChannel(id){const c=channels.find(x=>x.id===id);if(!c)return;try{const config=await api("/channels/"+encodeURIComponent(id)+"/config");editing=id;$("name").value=config.name;$("inputUrl").value=config.inputUrl;$("rtmp").value=config.rtmpDestination||"";$("logo").value=config.logo||"";$("channelId").value=config.id;$("channelId").disabled=true;$("formTitle").textContent="✎ Edit "+config.name;window.scrollTo({top:0,behavior:"smooth"});}catch(e){alert(e.message)}}
+$("channelForm").addEventListener("submit",async e=>{e.preventDefault();try{
+ const payload={name:$("name").value,inputUrl:$("inputUrl").value,rtmpDestination:$("rtmp").value,logo:$("logo").value};
+ if(!editing)payload.id=$("channelId").value;
+ await api(editing?"/channels/"+encodeURIComponent(editing):"/channels",{method:editing?"PUT":"POST",body:JSON.stringify(payload)});
+ resetForm();await load();
+ }catch(err){alert(err.message)}});
+async function control(id,action){try{await api(`/channels/${encodeURIComponent(id)}/${action}`,{method:"POST"});setTimeout(load,700)}catch(e){alert(e.message)}}
+async function bulk(action){try{const r=await api("/channels/"+action,{method:"POST"});if(r.errors?.length)alert(r.errors.join("\n"));setTimeout(load,700)}catch(e){alert(e.message)}}
+async function removeChannel(id){if(!confirm("Delete this channel?"))return;try{await api("/channels/"+encodeURIComponent(id),{method:"DELETE"});selected.delete(id);load()}catch(e){alert(e.message)}}
+function selectOne(id,on){on?selected.add(id):selected.delete(id);render()}
+function toggleAll(on){channels.forEach(c=>on?selected.add(c.id):selected.delete(c.id));render()}
+async function deleteSelected(){if(!selected.size)return;if(!confirm("Delete "+selected.size+" selected channels?"))return;for(const id of [...selected]){try{await api("/channels/"+encodeURIComponent(id),{method:"DELETE"})}catch(e){alert(e.message)}}selected.clear();load()}
+function copyUrl(url){navigator.clipboard.writeText(new URL(url,location.href).href).then(()=>alert("HLS URL copied"))}
+function openHls(url){window.open(url,"_blank")}
+load();setInterval(load,5000);
+</script>
+</body></html>

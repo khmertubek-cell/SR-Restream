@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: hls-relay-center
+    runtime: docker
+    plan: standard
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
+    healthCheckPath: /health
+    disk:
+      name: hls-relay-data
+      mountPath: /var/data
+      sizeGB: 20
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: DATA_DIR
+        value: /var/data/data
+      - key: HLS_DIR
+        value: /var/data/hls
+      - key: MAX_CHANNELS
+        value: "10"
+      - key: AUTO_START_CHANNELS
+        value: "true"
+      - key: ADMIN_USER
+        sync: false
+      - key: ADMIN_PASSWORD
+        generateValue: true
